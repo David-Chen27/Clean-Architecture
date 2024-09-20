@@ -3,10 +3,13 @@ using Clean_Architecture.Domain.Constants;
 using Clean_Architecture.Infrastructure.Data;
 using Clean_Architecture.Infrastructure.Data.Interceptors;
 using Clean_Architecture.Infrastructure.Identity;
+using Clean_Architecture.Infrastructure.Logging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -48,6 +51,19 @@ public static class DependencyInjection
 
         services.AddAuthorization(options =>
             options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator)));
+
+        // Setting Serilog
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .Enrich.With<EventTypeEnricher>()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
+
+        services.AddLogging(loggingBuilder =>
+        {
+            loggingBuilder.ClearProviders();
+            loggingBuilder.AddSerilog(Log.Logger, dispose: true);
+        });
 
         return services;
     }

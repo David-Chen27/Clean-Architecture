@@ -25,20 +25,21 @@ public class RequestLoggerTests
     public async Task ShouldCallGetUserNameAsyncOnceIfAuthenticated()
     {
         _user.Setup(x => x.Id).Returns(Guid.NewGuid().ToString());
+        _identityService.Setup(x => x.GetUserNameAsync(It.IsAny<string>())).ReturnsAsync("Test User");
 
-        var requestLogger = new LoggingBehaviour<CreateTodoItemCommand>(_logger.Object, _user.Object, _identityService.Object);
+        var requestLogger = new LoggingBehaviour<CreateTodoItemCommand, int>(_logger.Object, _user.Object, _identityService.Object);
 
-        await requestLogger.Process(new CreateTodoItemCommand { ListId = 1, Title = "title" }, new CancellationToken());
+        await requestLogger.Handle(new CreateTodoItemCommand { ListId = 1, Title = "title" }, () => Task.FromResult(1), new CancellationToken());
 
         _identityService.Verify(i => i.GetUserNameAsync(It.IsAny<string>()), Times.Once);
     }
 
     [Test]
-    public async Task ShouldNotCallGetUserNameAsyncOnceIfUnauthenticated()
+    public async Task ShouldNotCallGetUserNameAsyncIfUnauthenticated()
     {
-        var requestLogger = new LoggingBehaviour<CreateTodoItemCommand>(_logger.Object, _user.Object, _identityService.Object);
+        var requestLogger = new LoggingBehaviour<CreateTodoItemCommand, int>(_logger.Object, _user.Object, _identityService.Object);
 
-        await requestLogger.Process(new CreateTodoItemCommand { ListId = 1, Title = "title" }, new CancellationToken());
+        await requestLogger.Handle(new CreateTodoItemCommand { ListId = 1, Title = "title" }, () => Task.FromResult(1), new CancellationToken());
 
         _identityService.Verify(i => i.GetUserNameAsync(It.IsAny<string>()), Times.Never);
     }
