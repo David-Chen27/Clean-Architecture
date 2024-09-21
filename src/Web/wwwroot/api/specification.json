@@ -6,46 +6,6 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/api/LoggingTest": {
-      "get": {
-        "tags": [
-          "LoggingTest"
-        ],
-        "operationId": "GetLoggingTest",
-        "parameters": [
-          {
-            "name": "Message",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          },
-          {
-            "name": "Password",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 2
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "boolean"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/TodoItems": {
       "get": {
         "tags": [
@@ -901,7 +861,7 @@
         }
       },
       "PriorityLevel": {
-        "type": "integer",
+        "type": "string",
         "description": "",
         "x-enumNames": [
           "None",
@@ -910,10 +870,10 @@
           "High"
         ],
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "None",
+          "Low",
+          "Medium",
+          "High"
         ]
       },
       "TodosVm": {
