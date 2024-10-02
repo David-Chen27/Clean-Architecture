@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Clean_Architecture.Infrastructure.Bcrypt;
+using Clean_Architecture.Infrastructure.Encryption;
 using Serilog;
 
 namespace Clean_Architecture.Infrastructure;
@@ -49,6 +51,8 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
         services.AddTransient<IIdentityService, IdentityService>();
+        services.AddSingleton<IEncryptionService, EncryptionService>();
+        services.AddSingleton<IBcryptService, BcryptService>();
 
         services.AddAuthorization(options =>
             options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator)));
