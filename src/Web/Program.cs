@@ -1,4 +1,7 @@
+using Clean_Architecture.Application;
+using Clean_Architecture.Infrastructure;
 using Clean_Architecture.Infrastructure.Data;
+using Clean_Architecture.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 

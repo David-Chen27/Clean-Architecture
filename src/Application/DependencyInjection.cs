@@ -1,7 +1,8 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using Clean_Architecture.Application.Common.Behaviours;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace Clean_Architecture.Application;
 
 public static class DependencyInjection
 {

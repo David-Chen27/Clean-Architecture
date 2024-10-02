@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace Clean_Architecture.Web;
 
 public static class DependencyInjection
 {
