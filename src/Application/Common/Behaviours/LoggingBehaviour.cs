@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 namespace Clean_Architecture.Application.Common.Behaviours;
 
 public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
 {
     private const string MaskedValue = "*****";
     private readonly ILogger<TRequest> _logger;
@@ -34,9 +34,9 @@ public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest,
                 .Select(field => field.ToLower())
                 .ToHashSet();
 
-            var maskedRequest = CreateMaskedRequest(request, maskFields);
+            request = CreateMaskedRequest(request, maskFields);
 
-            _logger.LogInformation($"Request: {maskedRequest}");
+            _logger.LogInformation($"Request: {request}");
 
             if (!string.IsNullOrEmpty(userId))
             {
@@ -53,25 +53,24 @@ public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest,
 
     private TRequest CreateMaskedRequest(TRequest request, HashSet<string> maskFields)
     {
-        var maskedRequest = Activator.CreateInstance<TRequest>();
-        if (maskedRequest == null)
+        if (maskFields.Count == 0)
         {
-            throw new InvalidOperationException($"Unable to create instance of type {typeof(TRequest)}");
+            return request;
         }
-
+        
         foreach (var property in typeof(TRequest).GetProperties())
         {
             var value = property.GetValue(request);
             if (maskFields.Contains(property.Name.ToLower()) && value is string)
             {
-                property.SetValue(maskedRequest, MaskedValue);
+                property.SetValue(request, MaskedValue);
             }
             else
             {
-                property.SetValue(maskedRequest, value);
+                property.SetValue(request, value);
             }
         }
 
-        return maskedRequest;
+        return request;
     }
 }

@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Idea
 .idea
+
+# Web/wwwroot/uploads
+uploads
