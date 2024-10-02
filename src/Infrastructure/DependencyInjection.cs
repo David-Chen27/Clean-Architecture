@@ -1,4 +1,5 @@
-﻿using Clean_Architecture.Application.Common.Interfaces;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Clean_Architecture.Application.Common.Interfaces;
 using Clean_Architecture.Domain.Constants;
 using Clean_Architecture.Infrastructure.Data;
 using Clean_Architecture.Infrastructure.Data.Interceptors;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace Clean_Architecture.Infrastructure;
 
 public static class DependencyInjection
 {
