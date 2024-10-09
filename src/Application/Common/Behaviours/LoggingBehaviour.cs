@@ -34,9 +34,10 @@ public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest,
                 .Select(field => field.ToLower())
                 .ToHashSet();
 
+            var requestName = typeof(TRequest).Name;
             request = CreateMaskedRequest(request, maskFields);
 
-            _logger.LogInformation($"Request: {request}");
+            _logger.LogInformation("Request: {Nmae} {@Request}", requestName, request);
 
             if (!string.IsNullOrEmpty(userId))
             {
