@@ -9,13 +9,16 @@ public class AuthorizationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRe
 {
     private readonly IUser _user;
     private readonly IIdentityService _identityService;
+    private readonly IApplicationAuthorizationService _applicationAuthorizationService;
 
     public AuthorizationBehaviour(
         IUser user,
-        IIdentityService identityService)
+        IIdentityService identityService,
+        IApplicationAuthorizationService applicationAuthorizationService)
     {
         _user = user;
         _identityService = identityService;
+        _applicationAuthorizationService = applicationAuthorizationService;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
@@ -41,8 +44,8 @@ public class AuthorizationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRe
                 {
                     foreach (var role in roles)
                     {
-                        var isInRole = await _identityService.IsInRoleAsync(_user.Id, role.Trim());
-                        if (isInRole)
+                        var isInRole = await _applicationAuthorizationService.IsInRoleAsync(_user.Id, role.Trim());
+                        if (isInRole.Succeeded)
                         {
                             authorized = true;
                             break;
@@ -63,9 +66,9 @@ public class AuthorizationBehaviour<TRequest, TResponse> : IPipelineBehavior<TRe
             {
                 foreach (var policy in authorizeAttributesWithPolicies.Select(a => a.Policy))
                 {
-                    var authorized = await _identityService.AuthorizeAsync(_user.Id, policy);
+                    var authorized = await _applicationAuthorizationService.AuthorizeAsync(_user.Id, policy);
 
-                    if (!authorized)
+                    if (!authorized.Succeeded)
                     {
                         throw new ForbiddenAccessException();
                     }

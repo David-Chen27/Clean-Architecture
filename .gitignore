@@ -485,3 +485,8 @@ $RECYCLE.BIN/
 
 # Web/wwwroot/uploads
 uploads
+
+# Ignore all appsettings.json files except example
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
