@@ -5,6 +5,8 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Clean_Architecture.Domain.Entities;
+using Clean_Architecture.Domain.Extensions;
 
 namespace Clean_Architecture.Application.FunctionalTests;
 
@@ -64,6 +66,7 @@ public partial class Testing
         using var scope = _scopeFactory.CreateScope();
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var user = new ApplicationUser { UserName = userName, Email = userName };
 
@@ -71,14 +74,74 @@ public partial class Testing
 
         if (roles.Any())
         {
-            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+            var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
             foreach (var role in roles)
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                await roleManager.CreateAsync(new ApplicationRole(role));
             }
 
             await userManager.AddToRolesAsync(user, roles);
+        }
+
+        // Default Resources
+        if (!context.Resources.Any())
+        {
+            var addResources = new List<Resource>();
+            var resources = typeof(Domain.Constants.Resources).GetAllConstants();
+
+            foreach (var resource in resources)
+            {
+                addResources.Add(new Resource { Name = resource, Description = resource });
+            }
+
+            context.Resources.AddRange(addResources);
+            await context.SaveChangesAsync();
+        }
+
+        // Default Permissions
+        if (!context.Permissions.Any())
+        {
+            var addPermissions = new List<Permission>();
+            var resources = context.Resources.ToList();
+            var permissions = typeof(Actions).GetAllConstants();
+
+            foreach (var resource in resources)
+            {
+                foreach (var permission in permissions)
+                {
+                    addPermissions.Add(new Permission
+                    {
+                        ResourceId = resource.Id, Name = permission, Description = permission
+                    });
+                }
+            }
+
+            context.Permissions.AddRange(addPermissions);
+            await context.SaveChangesAsync();
+
+            // Default RolePermissions
+            if (!context.RolePermissions.Any())
+            {
+                var addRolePermissions = new List<RolePermission>();
+
+                var adminstratorRoleId = context.Roles.Where(p => p.Name == Roles.Administrator).Select(p => p.Id)
+                    .FirstOrDefault();
+
+                if (adminstratorRoleId != null)
+                {
+                    foreach (var permission in context.Permissions)
+                    {
+                        addRolePermissions.Add(new RolePermission
+                        {
+                            RoleId = adminstratorRoleId, PermissionId = permission.Id
+                        });
+                    }
+
+                    context.RolePermissions.AddRange(addRolePermissions);
+                    await context.SaveChangesAsync();
+                }
+            }
         }
 
         if (result.Succeeded)

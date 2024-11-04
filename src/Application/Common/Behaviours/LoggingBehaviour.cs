@@ -33,11 +33,11 @@ public class LoggingBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest,
                 .SelectMany(attr => attr.mask)
                 .Select(field => field.ToLower())
                 .ToHashSet();
-
+            
             var requestName = typeof(TRequest).Name;
             request = CreateMaskedRequest(request, maskFields);
 
-            _logger.LogInformation("Request: {Nmae} {@Request}", requestName, request);
+            _logger.LogInformation($"Request: {requestName} {@request}");
 
             if (!string.IsNullOrEmpty(userId))
             {

@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+﻿using MediatR;
 using Clean_Architecture.Domain.Constants;
 using Clean_Architecture.Domain.Entities;
 using Clean_Architecture.Infrastructure.Identity;
@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Clean_Architecture.Application.Authorization.RoleGroups.Commands.CreateRole;
+using Clean_Architecture.Domain.Extensions;
 
 namespace Clean_Architecture.Infrastructure.Data;
 
@@ -29,14 +31,22 @@ public class ApplicationDbContextInitialiser
     private readonly ILogger<ApplicationDbContextInitialiser> _logger;
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly ISender _sender;
 
-    public ApplicationDbContextInitialiser(ILogger<ApplicationDbContextInitialiser> logger, ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+    public ApplicationDbContextInitialiser(
+        ILogger<ApplicationDbContextInitialiser> logger,
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        RoleManager<ApplicationRole> roleManager,
+        ISender sender
+    )
     {
         _logger = logger;
         _context = context;
         _userManager = userManager;
         _roleManager = roleManager;
+        _sender = sender;
     }
 
     public async Task InitialiseAsync()
@@ -68,22 +78,91 @@ public class ApplicationDbContextInitialiser
     public async Task TrySeedAsync()
     {
         // Default roles
-        var administratorRole = new IdentityRole(Roles.Administrator);
+        var roles = _roleManager.Roles.Select(r => r.Name).ToList();
 
-        if (_roleManager.Roles.All(r => r.Name != administratorRole.Name))
+        var roleConstants = typeof(Roles).GetAllConstants();
+
+        foreach (var role in roleConstants)
         {
-            await _roleManager.CreateAsync(administratorRole);
+            if (!roles.Contains(role))
+            {
+                var createRoleCommand = new CreateRoleCommand{Name = role, Description = Roles.GetDescription(role)};
+                await _sender.Send(createRoleCommand);
+            }
         }
 
+        var administratorRole = new ApplicationRole(Roles.Administrator);
+
         // Default users
-        var administrator = new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost" };
+        var administrator =
+            new ApplicationUser { UserName = "administrator@localhost", Email = "administrator@localhost" };
 
         if (_userManager.Users.All(u => u.UserName != administrator.UserName))
         {
             await _userManager.CreateAsync(administrator, "Administrator1!");
             if (!string.IsNullOrWhiteSpace(administratorRole.Name))
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                await _userManager.AddToRolesAsync(administrator, new[] { administratorRole.Name });
+            }
+        }
+
+        // Default Resources
+        if (!_context.Resources.Any())
+        {
+            var addResources = new List<Resource>();
+            var resources = typeof(Domain.Constants.Resources).GetAllConstants();
+
+            foreach (var resource in resources)
+            {
+                addResources.Add(new Resource { Name = resource, Description = Resources.GetDescription(resource) });
+            }
+
+            _context.Resources.AddRange(addResources);
+            await _context.SaveChangesAsync();
+        }
+
+        // Default Permissions
+        if (!_context.Permissions.Any())
+        {
+            var addPermissions = new List<Permission>();
+            var resources = _context.Resources.ToList();
+            var permissions = typeof(Actions).GetAllConstants();
+
+            foreach (var resource in resources)
+            {
+                foreach (var permission in permissions)
+                {
+                    addPermissions.Add(new Permission
+                    {
+                        ResourceId = resource.Id, Name = permission, Description = Actions.GetDescription(permission)
+                    });
+                }
+            }
+
+            _context.Permissions.AddRange(addPermissions);
+            await _context.SaveChangesAsync();
+        }
+
+        // Default RolePermissions
+        if (!_context.RolePermissions.Any())
+        {
+            var addRolePermissions = new List<RolePermission>();
+
+            var adminstratorRoleId = _context.Roles.Where(p => p.Name == Roles.Administrator).Select(p => p.Id)
+                .FirstOrDefault();
+
+            if (adminstratorRoleId != null)
+            {
+                foreach (var permission in _context.Permissions)
+                {
+                    addRolePermissions.Add(new RolePermission
+                    {
+                        RoleId = adminstratorRoleId, PermissionId = permission.Id
+                    });
+                }
+
+                _context.RolePermissions.AddRange(addRolePermissions);
+                await _context.SaveChangesAsync();
             }
         }
 
